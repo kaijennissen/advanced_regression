@@ -21,7 +21,7 @@ data <- data %>% rename(FrstFlrSF = `1stFlrSF`, ScndFlrSF = `2ndFlrSF`,
 pred_vars <- setdiff(colnames(data), c("Id", "SalePrice"))
 
 ## numeric predictors
-num_cat_preds <- c("MSSubClass", "OverallQual", "OverallCond")
+num_cat_preds <- c("MSSubClass", "OverallQual", "OverallCond", "MoSold")
 num_vars <- colnames(data)[data %>% map_lgl(is.numeric)]
 num_pred_vars <- setdiff(intersect(pred_vars, num_vars), num_cat_preds)
 

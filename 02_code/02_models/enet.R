@@ -1,4 +1,4 @@
-## RMSLE: 0.1235
+## RMSLE: 0.1215
 
 ## LIBRARIES ======================================================================================
 library("caret")
@@ -9,7 +9,24 @@ library("lubridate")
 
 rm(list = ls())
 df_all <- read_csv2("./01_data/02_processed/stacked_features.csv")
+rec_prepared <- function(rec, data, split = FALSE) {
+  if (split) {
+    nn <- nrow(data)
+    set.seed(123)
+    sample_train <- sample(nn, round(nn * .75))
+    df_tr <- data[sample_train, ]
+    df_ts <- data[-sample_train, ]
+  } else {
+    df_tr <- data
+    df_ts <- data
+  }
+  preped <- prep(rec, df_tr)
+  df_tr_baked <- bake(preped, df_tr)
+  df_ts_baked <- bake(preped, df_ts)
+  ls_rec <- list(train = df_tr_baked, test = df_ts_baked)
 
+  return(ls_rec)
+}
 ## MODEL===========================================================================================
 
 ## ANY NA'S LEFT
@@ -39,7 +56,6 @@ rec <- recipe(df_train) %>%
   step_scale(all_predictors()) # %>%
 # step_center()
 
-
 nn <- nrow(df_train)
 set.seed(123)
 sample_train <- sample(nn, round(nn * .75))
@@ -48,7 +64,6 @@ df_ts <- df_train[-sample_train, ]
 preped <- prep(rec, df_tr)
 df_tr <- juice(preped)
 df_ts <- bake(preped, df_ts)
-df_tt <- bake(preped, df_train)
 df_tt <- bake(preped, df_train)
 df_test <- bake(preped, df_test)
 
@@ -60,30 +75,30 @@ setdiff(col_tr, col_ts)
 setdiff(col_ts, col_tr)
 setdiff(col_tt, col_tr)
 
+
 # sum(is.na(df_tr_baked))
 # sum(is.na(df_ts_baked))
 # map_lgl(df_tr_baked, ~sum(is.na(.x))>0) %>%
-#   keep(~.x == TRUE)
-
+# keep(~.x == TRUE)
 sale_mean <- mean(df_tr$SalePrice)
 sale_sd <- sd(df_tr$SalePrice)
 df_tr$SalePrice <- (df_tr$SalePrice - sale_mean) / sale_sd
 
-## SUPPORT VECTOR REGRESSION =========================================================================
+
+## ELASTIC NET REGRESSION =========================================================================
+glmGrid <- expand.grid(alpha = seq(0, 1, .1), lambda = 10^seq(-4, 1, 1))
 
 fit <- caret::train(SalePrice ~ . - Id,
   data = df_tr,
-  method = "svmRadialSigma",
+  method = "glmnet",
   metric = "RMSE",
-  # tuneGrid = glmGrid,
-  tuneLength = 10,
+  # tuneLength = 10,
+  tuneGrid = glmGrid,
   trControl = trainControl(
     method = "cv",
     number = 10,
-    # repeats = 2,
-    search = "random",
-    # returnResamp = "final",
-    # summaryFunction = RMSLE,
+    savePredictions = "final",
+    search = "grid",
     verboseIter = TRUE,
     allowParallel = TRUE
   )
@@ -91,25 +106,28 @@ fit <- caret::train(SalePrice ~ . - Id,
 
 fit$bestTune
 
-df_ts$SalePriceFit_svm <- predict.train(fit, newdata = df_ts) * sale_sd + sale_mean
-RMSE(pred = df_ts$SalePriceFit_svm, obs = df_ts$SalePrice)
+df_ts$SalePriceFit_enet <- predict.train(fit, newdata = df_ts) * sale_sd + sale_mean
+RMSE(pred = df_ts$SalePriceFit_enet, obs = df_ts$SalePrice)
 
 df_train_ <- bake(preped, df_train)
 sale_mean <- mean(df_train$SalePrice)
 sale_sd <- sd(df_train$SalePrice)
 df_train$SalePrice <- (df_train$SalePrice - sale_mean) / sale_sd
 
-df_tt$SalePriceFit_svm <- predict.train(fit, newdata = df_tt) * sale_sd + sale_mean
-RMSE(pred = df_tt$SalePriceFit_svm, obs = df_tt$SalePrice)
+df_tt$SalePriceFit_enet <- predict.train(fit, newdata = df_tt) * sale_sd + sale_mean
+RMSE(pred = df_tt$SalePriceFit_enet, obs = df_tt$SalePrice)
 
 write_csv(
   x = dplyr::select(df_tt, Id, starts_with("SalePrice")),
-  path = "01_data/03_predictions/01_train/svm_prediction.csv"
+  path = "01_data/03_predictions/01_train/enet_prediction.csv"
 )
 
-df_test$SalePriceFit_svm <- predict.train(fit, newdata = df_test) * sale_sd + sale_mean
+
+df_test$SalePriceFit_enet <- predict.train(fit, newdata = df_test) * sale_sd + sale_mean
 
 write_csv(
   x = dplyr::select(df_test, Id, starts_with("SalePrice")),
-  path = "01_data/03_predictions/02_test/svm_prediction.csv"
+  path = "01_data/03_predictions/02_test/enet_prediction.csv"
 )
+
+

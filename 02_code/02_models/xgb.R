@@ -1,4 +1,4 @@
-## RMSLE: 0.1235
+## RMSLE: 0.119015
 
 ## LIBRARIES ======================================================================================
 library("caret")
@@ -49,7 +49,6 @@ preped <- prep(rec, df_tr)
 df_tr <- juice(preped)
 df_ts <- bake(preped, df_ts)
 df_tt <- bake(preped, df_train)
-df_tt <- bake(preped, df_train)
 df_test <- bake(preped, df_test)
 
 col_tr <- colnames(df_tr)
@@ -69,21 +68,21 @@ sale_mean <- mean(df_tr$SalePrice)
 sale_sd <- sd(df_tr$SalePrice)
 df_tr$SalePrice <- (df_tr$SalePrice - sale_mean) / sale_sd
 
-## SUPPORT VECTOR REGRESSION =========================================================================
 
+## GAUSSIAN PROCESS REGRESSION =========================================================================
+
+# 'gaussprPoly', 'gaussprLinear', 'gaussprRadial'
 fit <- caret::train(SalePrice ~ . - Id,
   data = df_tr,
-  method = "svmRadialSigma",
+  method = "xgbTree",
   metric = "RMSE",
+  tuneLength = 20,
   # tuneGrid = glmGrid,
-  tuneLength = 10,
   trControl = trainControl(
     method = "cv",
     number = 10,
-    # repeats = 2,
+    # savePredictions = "final",
     search = "random",
-    # returnResamp = "final",
-    # summaryFunction = RMSLE,
     verboseIter = TRUE,
     allowParallel = TRUE
   )
@@ -91,25 +90,26 @@ fit <- caret::train(SalePrice ~ . - Id,
 
 fit$bestTune
 
-df_ts$SalePriceFit_svm <- predict.train(fit, newdata = df_ts) * sale_sd + sale_mean
-RMSE(pred = df_ts$SalePriceFit_svm, obs = df_ts$SalePrice)
+df_ts$SalePriceFit_xgb <- predict.train(fit, newdata = df_ts) * sale_sd + sale_mean
+RMSE(pred = df_ts$SalePriceFit_xgb, obs = df_ts$SalePrice)
 
 df_train_ <- bake(preped, df_train)
 sale_mean <- mean(df_train$SalePrice)
 sale_sd <- sd(df_train$SalePrice)
 df_train$SalePrice <- (df_train$SalePrice - sale_mean) / sale_sd
 
-df_tt$SalePriceFit_svm <- predict.train(fit, newdata = df_tt) * sale_sd + sale_mean
-RMSE(pred = df_tt$SalePriceFit_svm, obs = df_tt$SalePrice)
+df_tt$SalePriceFit_xgb <- predict.train(fit, newdata = df_tt) * sale_sd + sale_mean
+RMSE(pred = df_tt$SalePriceFit_xgb, obs = df_tt$SalePrice)
 
 write_csv(
   x = dplyr::select(df_tt, Id, starts_with("SalePrice")),
-  path = "01_data/03_predictions/01_train/svm_prediction.csv"
+  path = "01_data/03_predictions/01_train/xgb_prediction.csv"
 )
 
-df_test$SalePriceFit_svm <- predict.train(fit, newdata = df_test) * sale_sd + sale_mean
+
+df_test$SalePriceFit_xgb <- predict.train(fit, newdata = df_test) * sale_sd + sale_mean
 
 write_csv(
   x = dplyr::select(df_test, Id, starts_with("SalePrice")),
-  path = "01_data/03_predictions/02_test/svm_prediction.csv"
+  path = "01_data/03_predictions/02_test/xgb_prediction.csv"
 )

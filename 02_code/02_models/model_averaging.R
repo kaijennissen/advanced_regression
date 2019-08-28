@@ -1,21 +1,19 @@
 ## LIBRARIES ======================================================================================
-# library("mgcv")
 library("caret")
-library("recipes")
-library("glmnet")
+library("lrmest")
 library("tidyverse")
 library("lubridate")
 
 
 ## RUN PREDICTIONS ==================
 rm(list = ls())
-pred_models <- c("gp", "enet", "svm", "xgb")
+# pred_models <- c()#"gp", "enet", "svm", "xgb", "foba", "lars", "knn"
+# 
+# for (x in pred_models) {
+#   source(paste0("./02_code/02_models/", x, ".R"))
+# }
 
-for (x in pred_models) {
-  source(paste0("./02_code/02_models/", x, ".R"))
-}
-
-pred_models <- c("gp", "enet", "svm", "xgb")
+pred_models <- c("gp", "enet", "svm", "xgb", "foba", "lars", "knn")
 # "grp_lasso", "SpikeAndSlab",, "bayesian_regression")
 dir_path <- "./01_data/03_predictions/01_train/"
 df_train <- tibble()
@@ -33,7 +31,7 @@ for (pred_model in pred_models) {
 
 df_train
 
-glmGrid <- expand.grid(alpha = seq(0, 1, .1), lambda = 10^seq(-4, 1, 1))
+glmGrid <- expand.grid(alpha = 1, lambda = 10^seq(-4, 1, 1))
 
 fit <- caret::train(SalePrice~.-Id, data = df_train,
                        method = "glmnet",
@@ -48,8 +46,14 @@ fit <- caret::train(SalePrice~.-Id, data = df_train,
                          verboseIter = TRUE,
                          allowParallel = TRUE)
 )
+# r <- 1
+# R <- rep(1, 2)
+# rls(SalePrice~SalePriceFit_gp+SalePriceFit_enet-1,
+#     r = r,
+#     R = R,
+#     data = as.data.frame(df_train))
 
-fit$bestTune
+coef(fit$finalModel, fit$bestTune$lambda)
 
 df_train$SalePriceFit_stacked <- predict.train(fit, newdata = df_train)
 RMSE(pred = df_train$SalePriceFit_stacked, obs = df_train$SalePrice)

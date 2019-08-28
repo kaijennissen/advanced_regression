@@ -210,4 +210,12 @@ df_all <- df_all %>%
 # df_all <- bind_cols(df_all, spl)
 
 
+## CHECK FOR COVARIATE SHIFTS
+
+## log regression with target (test/train) and only a single featuree
+## calc AUC
+## if AUC>0.8 feature is drifting
+## repeat for every single feature
+
+
 write_csv2(df_all, "./01_data/02_processed/stacked_features.csv")

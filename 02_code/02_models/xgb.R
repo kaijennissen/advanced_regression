@@ -80,7 +80,7 @@ fit <- caret::train(SalePrice ~ . - Id,
   # tuneGrid = glmGrid,
   trControl = trainControl(
     method = "cv",
-    number = 10,
+    number = 5,
     # savePredictions = "final",
     search = "random",
     verboseIter = TRUE,

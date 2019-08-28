@@ -7,7 +7,7 @@ library("glmnet")
 library("tidyverse")
 library("lubridate")
 
-rm(list = ls())
+#rm(list = ls())
 df_all <- read_csv2("./01_data/02_processed/stacked_features.csv")
 rec_prepared <- function(rec, data, split = FALSE) {
   if (split) {
@@ -96,7 +96,7 @@ fit <- caret::train(SalePrice ~ . - Id,
   tuneGrid = glmGrid,
   trControl = trainControl(
     method = "cv",
-    number = 10,
+    number = 5,
     savePredictions = "final",
     search = "grid",
     verboseIter = TRUE,

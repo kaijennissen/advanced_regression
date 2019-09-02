@@ -1,4 +1,4 @@
-## RMSLE: 0.1215
+## RMSLE: 0.1164
 
 ## LIBRARIES ======================================================================================
 library("caret")
@@ -7,7 +7,9 @@ library("glmnet")
 library("tidyverse")
 library("lubridate")
 
-#rm(list = ls())
+rm(list = ls())
+source(paste0("./02_code/01_data_prep/features.R"))
+
 df_all <- read_csv2("./01_data/02_processed/stacked_features.csv")
 rec_prepared <- function(rec, data, split = FALSE) {
   if (split) {
@@ -46,15 +48,12 @@ rec <- recipe(df_train) %>%
   update_role("SalePrice", new_role = "outcome") %>%
   update_role("Id", new_role = "id") %>%
   update_role(-all_outcomes(), -has_role("id"), new_role = "predictor") %>%
-  step_nzv(all_predictors()) %>%
   step_novel(all_nominal()) %>%
   step_dummy(all_nominal()) %>%
-  # step_log(all_outcomes()) %>%
   step_nzv(all_numeric(), -all_outcomes(), -has_role("id")) %>%
-  step_YeoJohnson(all_numeric(), -all_outcomes(), -has_role("id")) %>%
-  step_center(all_predictors()) %>%
-  step_scale(all_predictors()) # %>%
-# step_center()
+  step_BoxCox(all_numeric(), -all_outcomes(), -has_role("id")) %>%
+  step_normalize(all_predictors()) ## step_center(all_predictors()) %>% # step_scale(all_predictors()) # %>%
+
 
 nn <- nrow(df_train)
 set.seed(123)
@@ -67,13 +66,13 @@ df_ts <- bake(preped, df_ts)
 df_tt <- bake(preped, df_train)
 df_test <- bake(preped, df_test)
 
-col_tr <- colnames(df_tr)
-col_ts <- colnames(df_ts)
-col_tt <- colnames(df_tt)
-
-setdiff(col_tr, col_ts)
-setdiff(col_ts, col_tr)
-setdiff(col_tt, col_tr)
+# col_tr <- colnames(df_tr)
+# col_ts <- colnames(df_ts)
+# col_tt <- colnames(df_tt)
+# 
+# setdiff(col_tr, col_ts)
+# setdiff(col_ts, col_tr)
+# setdiff(col_tt, col_tr)
 
 
 # sum(is.na(df_tr_baked))
@@ -109,11 +108,6 @@ fit$bestTune
 df_ts$SalePriceFit_enet <- predict.train(fit, newdata = df_ts) * sale_sd + sale_mean
 RMSE(pred = df_ts$SalePriceFit_enet, obs = df_ts$SalePrice)
 
-df_train_ <- bake(preped, df_train)
-sale_mean <- mean(df_train$SalePrice)
-sale_sd <- sd(df_train$SalePrice)
-df_train$SalePrice <- (df_train$SalePrice - sale_mean) / sale_sd
-
 df_tt$SalePriceFit_enet <- predict.train(fit, newdata = df_tt) * sale_sd + sale_mean
 RMSE(pred = df_tt$SalePriceFit_enet, obs = df_tt$SalePrice)
 
@@ -122,12 +116,10 @@ write_csv(
   path = "01_data/03_predictions/01_train/enet_prediction.csv"
 )
 
-
 df_test$SalePriceFit_enet <- predict.train(fit, newdata = df_test) * sale_sd + sale_mean
 
 write_csv(
   x = dplyr::select(df_test, Id, starts_with("SalePrice")),
   path = "01_data/03_predictions/02_test/enet_prediction.csv"
 )
-
 

@@ -73,7 +73,7 @@ df_tr$SalePrice <- (df_tr$SalePrice - sale_mean) / sale_sd
 # larsGrid <- list(step = seq(20, 200, 10))
 fit <- caret::train(SalePrice ~ . - Id,
   data = df_tr,
-  method = "svmExpoString",
+  method = "svmSpectrumString",
   metric = "RMSE",
   tuneLength = 10,
   # tuneGrid = larsGrid,

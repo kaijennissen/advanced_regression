@@ -1,4 +1,4 @@
-## RMSLE: 0.119015
+## RMSLE: 0.1190
 
 ## LIBRARIES ======================================================================================
 library("caret")
@@ -68,16 +68,15 @@ sale_mean <- mean(df_tr$SalePrice)
 sale_sd <- sd(df_tr$SalePrice)
 df_tr$SalePrice <- (df_tr$SalePrice - sale_mean) / sale_sd
 
-
 ## GAUSSIAN PROCESS REGRESSION =========================================================================
 
-# 'gaussprPoly', 'gaussprLinear', 'gaussprRadial'
+svmGrid <- list(sigmas = seq(0.001, 0.01, 0.003), C = 10^seq(-2, 2, .5))
 fit <- caret::train(SalePrice ~ . - Id,
   data = df_tr,
-  method = "xgbTree",
+  method = "svmRadial",
   metric = "RMSE",
   tuneLength = 50,
-  # tuneGrid = glmGrid,
+  # tuneGrid = svmGrid,
   trControl = trainControl(
     method = "cv",
     number = 5,
@@ -88,28 +87,23 @@ fit <- caret::train(SalePrice ~ . - Id,
   )
 )
 
-fit$bestTune
+fit
 
-df_ts$SalePriceFit_xgb <- predict.train(fit, newdata = df_ts) * sale_sd + sale_mean
-RMSE(pred = df_ts$SalePriceFit_xgb, obs = df_ts$SalePrice)
+df_ts$SalePriceFit_krls <- predict.train(fit, newdata = df_ts) * sale_sd + sale_mean
+RMSE(pred = df_ts$SalePriceFit_krls, obs = df_ts$SalePrice)
 
-df_train_ <- bake(preped, df_train)
-sale_mean <- mean(df_train$SalePrice)
-sale_sd <- sd(df_train$SalePrice)
-df_train$SalePrice <- (df_train$SalePrice - sale_mean) / sale_sd
-
-df_tt$SalePriceFit_xgb <- predict.train(fit, newdata = df_tt) * sale_sd + sale_mean
-RMSE(pred = df_tt$SalePriceFit_xgb, obs = df_tt$SalePrice)
+df_tt$SalePriceFit_krls <- predict.train(fit, newdata = df_tt) * sale_sd + sale_mean
+RMSE(pred = df_tt$SalePriceFit_krls, obs = df_tt$SalePrice)
 
 write_csv(
   x = dplyr::select(df_tt, Id, starts_with("SalePrice")),
-  path = "01_data/03_predictions/01_train/xgb_prediction.csv"
+  path = "01_data/03_predictions/01_train/krls_prediction.csv"
 )
 
-
-df_test$SalePriceFit_xgb <- predict.train(fit, newdata = df_test) * sale_sd + sale_mean
+df_test$SalePriceFit_krls <- predict.train(fit, newdata = df_test) * sale_sd + sale_mean
 
 write_csv(
   x = dplyr::select(df_test, Id, starts_with("SalePrice")),
-  path = "01_data/03_predictions/02_test/xgb_prediction.csv"
+  path = "01_data/03_predictions/02_test/krls_prediction.csv"
 )
+

@@ -7,13 +7,16 @@ library("lubridate")
 
 ## RUN PREDICTIONS ==================
 rm(list = ls())
-# pred_models <- c()#"gp", "enet", "svm", "xgb", "foba", "lars", "knn"
-# 
-# for (x in pred_models) {
-#   source(paste0("./02_code/02_models/", x, ".R"))
-# }
+source(paste0("./02_code/01_data_prep/features.R"))
 
-pred_models <- c("gp", "enet", "svm", "xgb", "foba", "lars", "knn")
+pred_models <- c("enet", "foba", "lars", "gp", "svm", "xgb") #"gp", "enet", "svm", "xgb", "foba", "lars", "knn"
+
+for (x in pred_models) {
+  source(paste0("./02_code/02_models/", x, ".R"))
+}
+
+
+pred_models <- c("enet", "foba", "lars", "gp", "svm", "xgb")
 # "grp_lasso", "SpikeAndSlab",, "bayesian_regression")
 dir_path <- "./01_data/03_predictions/01_train/"
 df_train <- tibble()

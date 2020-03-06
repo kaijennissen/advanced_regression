@@ -47,20 +47,21 @@ df_tr$SalePrice <- (df_tr$SalePrice - sale_mean) / sale_sd
 
 ## GAUSSIAN PROCESS REGRESSION =========================================================================
 
-# 'gaussprLinear'
+# 'svmLinear'
+svmGrid <- expand.grid(C = seq(10^-4, 10^-1, by = 5*10^-4))
 
 # 'gaussprPoly',
-gpGrid <- expand.grid(degree = seq(4, 10, 1), scale = 10^seq(-4, -2, 1))
+# gpGrid <- expand.grid(degree = seq(4, 10, 1), scale = 10^seq(-4, -2, 1))
 
 # 'gaussprRadial'
-gpGrid <- expand.grid(sigma = seq(0, 1, .1))
+# gpGrid <- expand.grid(sigma = seq(10^-4, 10^-2, 10^-4))
 
 fit <- caret::train(SalePrice ~ . - Id,
   data = df_tr,
-  method = "gaussprRadial",
+  method = "svmLinear",
   metric = "RMSE",
-  # tuneLength = 20,
-  # tuneGrid = gpGrid,
+  # tuneLength = 2,
+  tuneGrid = svmGrid,
   trControl = trainControl(
     method = "repeatedcv",
     number = 5,

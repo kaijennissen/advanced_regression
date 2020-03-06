@@ -8,7 +8,7 @@ library("tidyverse")
 library("lubridate")
 
 rm(list = ls())
-df_all <- read_csv2("./01_data/02_processed/stacked_features.csv")
+df_all <- read_csv2("./01_data/02_processed/train_test_stacked.csv")
 
 ## MODEL===========================================================================================
 
@@ -70,18 +70,18 @@ df_tr$SalePrice <- (df_tr$SalePrice - sale_mean) / sale_sd
 
 ## GAUSSIAN PROCESS REGRESSION =========================================================================
 
-# larsGrid <- list(step = seq(20, 200, 10))
+svmPolyGrid <- expand.grid(degree = seq(0, 10, 1), scale = c(1e-3, 1e-4, 1e-5), C = c(10, 20))
 fit <- caret::train(SalePrice ~ . - Id,
   data = df_tr,
-  method = "svmSpectrumString",
+  method = "svmPoly",
   metric = "RMSE",
   tuneLength = 10,
-  # tuneGrid = larsGrid,
+  tuneGrid = svmPolyGrid,
   trControl = trainControl(
     method = "cv",
-    number = 10,
+    number = 5,
     # savePredictions = "final",
-    search = "random",
+    search = "grid",
     verboseIter = TRUE,
     allowParallel = TRUE
   )
